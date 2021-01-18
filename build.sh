@@ -1,2 +1,2 @@
 #!/bin/bash
-gcc main.c -o numlocknotify `pkg-config --cflags --libs libnotify` -lX11
+gcc numlocknotify.c -o numlocknotify -lX11 `pkg-config --cflags --libs glib-2.0` `pkg-config --cflags --libs gtk+-3.0` `pkg-config --cflags --libs libnotify` 
