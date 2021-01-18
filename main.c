@@ -2,22 +2,44 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <libnotify/notify.h>
 #include <X11/Xlib.h>
 
+#define POLL_INTERVAL_MS 250
+#define NOTIFICATION_TIMEOUT_MS 800
+
 int prevstate;
 
-static void notify_numlockstate(const char* ns) {
-	notify_init("Sample");
-	NotifyNotification* n = notify_notification_new ("NumLock", 
-			ns,
-			0);
-	notify_notification_set_timeout(n, 1500); // milliseconds
-	if (!notify_notification_show(n, 0)) {
-		// printf("show has failed\n");
+/* msleep(): Sleep for the requested number of milliseconds. */
+int msleep(long msec)
+{
+	struct timespec ts;
+	int res;
+
+	if (msec < 0) {
+		errno = EINVAL;
+		return -1;
 	}
+
+	ts.tv_sec = msec / 1000;
+	ts.tv_nsec = (msec % 1000) * 1000000;
+
+	do {
+		res = nanosleep(&ts, &ts);
+	} while (res && errno == EINTR);
+
+	return res;
+}
+
+static void notify_numlockstate(const char* ns) {
+	notify_init("numlocknotify");
+	NotifyNotification* n = notify_notification_new ("NumLock", ns, 0);
+	notify_notification_set_timeout(n, NOTIFICATION_TIMEOUT_MS);
+	notify_notification_show(n,0);
 }
 
 static int get_numlock_state(void) {
@@ -39,7 +61,6 @@ static void loop() {
 	else {
 		notify_numlockstate("off");
 	}
-	sleep(1);
 }
 
 static void spawn_daemon(void) {
@@ -82,6 +103,9 @@ static void spawn_daemon(void) {
 int main(int argc, char * argv[]) {
 	prevstate = get_numlock_state();
 	spawn_daemon();
-	while(1) loop();
+	while(1) {
+		loop();
+		msleep(POLL_INTERVAL_MS);
+	}
 	return 0;
 }
