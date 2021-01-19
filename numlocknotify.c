@@ -21,9 +21,10 @@
 #define NOTIFICATION_TIMEOUT_MS 1500
 
 GtkApplication *		self_gtk_app;
-NotifyNotification * noti;
+NotifyNotification *	noti;
 
-extern GSettings *		self_gsettings;
+static gboolean old_on[3] = {FALSE, FALSE, FALSE};
+
 static Display *rootwin = NULL;
 static gint xkbev = 0;
 static gint xkberr = 0;
@@ -78,14 +79,23 @@ gboolean init_xkb_extension(GCallback show_func) {
 
 void on_xkb_event() {
 	gboolean *on = get_led_states();
-	if(on[1]) {
+	if(!memcmp(on, old_on, sizeof(old_on))) {
+		return;
+	}
+	if(on[1] && !old_on[1]) {
 		notify_notification_update(noti, "NumLock", "ON", 0);
-		notify_notification_show(noti,0);
 	}
-	else {
+	else if(!on[1] && old_on[1]) {
 		notify_notification_update(noti, "NumLock", "off", 0);
-		notify_notification_show(noti,0);
 	}
+	else if(on[0] && !old_on[0]) {
+		notify_notification_update(noti, "CapsLock", "ON", 0);
+	}
+	else if(!on[0] && old_on[0]) {
+		notify_notification_update(noti, "CapsLock", "off", 0);
+	}
+	notify_notification_show(noti,0);
+	memcpy(old_on,  get_led_states(), sizeof(old_on));
 }
 
 int main(int argc, char * argv[]) {
