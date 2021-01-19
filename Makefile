@@ -11,10 +11,10 @@ LIBS = -lX11 \
 				$(shell pkg-config --libs gtk+-3.0) \
 				$(shell pkg-config --libs libnotify)
 
-.PHONY: all default clean
+.PHONY: all default clean strip
 
 default: $(TARGET)
-all: default
+all: default strip
 
 OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
 HEADERS = $(wildcard *.h)
